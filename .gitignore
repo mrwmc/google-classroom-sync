@@ -52,7 +52,7 @@ upload/
 download/
 
 #timetabler files
-tt/
+timetable/
 
 # Typescript v1 declaration files
 typings/
