@@ -7,21 +7,28 @@ export default function buildSubjects () {
   const TimetableCsv = csvToJson.fieldDelimiter('"').getJsonFromCsv(`${appSettings.timetableFilesLocation}/Timetable.csv`)
   const UnscheduledDuties = csvToJson.fieldDelimiter('"').getJsonFromCsv(`${appSettings.timetableFilesLocation}/Unscheduled Duties.csv`)
 
+  const dataset = {}
+
+  getCompositeClasses()
   const subjects = getSubjectsAndClasses()
 
   addTeachersToSubjects()
   addStudentsToSubjects()
   addDomainLeaderToSubjects()
 
-  return subjects
+  dataset.subjects = subjects
+
+  return dataset
 
   function getSubjectsAndClasses () {
+    const sortedClassNamesCSV = classNamesCsv.sort((a, b) => a.SubjectCode.localeCompare(b.SubjectCode))
+
     const subjects = []
 
     const processedSubjects = []
     let arrayPosition = -1
 
-    classNamesCsv.forEach((e) => {
+    sortedClassNamesCSV.forEach((e) => {
       const faculty = e.FacultyName.split('_')[0]
 
       if (!processedSubjects.includes(e.SubjectCode)) {
@@ -32,13 +39,14 @@ export default function buildSubjects () {
           Teachers: [],
           ClassCodes: []
         })
-        arrayPosition = arrayPosition + 1
+        arrayPosition += 1
       }
-
-      subjects[arrayPosition].ClassCodes.push({
-        ClassCode: e.ClassCode,
-        Students: []
-      })
+      if (!dataset.CompositeClassCodeList.includes(e.ClassCode)) {
+        subjects[arrayPosition].ClassCodes.push({
+          ClassCode: e.ClassCode,
+          Students: []
+        })
+      }
 
       processedSubjects.push(e.SubjectCode)
     })
@@ -106,7 +114,87 @@ export default function buildSubjects () {
     })
   }
 
-  function addCompositeClasses () {
+  function getCompositeClasses () {
+    const compositeClasses = []
+    const compositeClassList = []
+    const compositeClassCodes = []
 
+    const uniqueLessonObjects = []
+    const map = new Map()
+
+    for (const item of TimetableCsv) {
+      if (!map.has(item.ClassCode)) {
+        map.set(item.ClassCode, true)
+
+        uniqueLessonObjects.push({
+          ClassCode: item.ClassCode,
+          Period: item.PeriodNo,
+          Teacher: item.TeacherCode,
+          Day: item.DayNo
+        })
+      }
+    }
+
+    uniqueLessonObjects.forEach((lesson) => {
+      const classCode = lesson.ClassCode
+      const dayNo = lesson.Day
+      const period = lesson.Period
+      const teacher = lesson.Teacher
+
+      const matchedClasses = []
+
+      TimetableCsv.forEach((item) => {
+        if (item.ClassCode !== classCode &&
+          item.DayNo === dayNo &&
+          item.PeriodNo === period &&
+          item.TeacherCode === teacher
+        ) {
+          matchedClasses.push(classCode, item.ClassCode)
+          compositeClassList.push(classCode)
+          compositeClassList.push(item.ClassCode)
+        }
+      })
+
+      if (matchedClasses.length) {
+        compositeClassCodes.push(matchedClasses.sort())
+      }
+    })
+
+    const uniqueCompositeClassCodes = [...new Set(compositeClassList.sort())]
+    const distinctCompositeClassCodes = Array.from(new Set(compositeClassCodes.map(JSON.stringify)), JSON.parse)
+
+    const cCodes = []
+
+    distinctCompositeClassCodes.forEach(c => {
+      const Students = []
+      const Teachers = []
+
+      StudentLessonsCsv.forEach((lesson) => {
+        if (lesson.ClassCode === c[0] || lesson.ClassCode === c[1]) {
+          Students.push(lesson.StudentCode)
+        }
+      })
+
+      TimetableCsv.forEach((lesson) => {
+        if (lesson.ClassCode === c[0] || lesson.ClassCode === c[1]) {
+          Teachers.push(lesson.TeacherCode)
+        }
+      })
+
+      const uniqueStudents = [...new Set(Students)]
+      const uniqueTeachers = [...new Set(Teachers)]
+
+      cCodes.push(`${c[0]}-${c[1]}`)
+
+      compositeClasses.push({
+        SubjectName: `${c[0]}-${c[1]}`,
+        ClassCode: `${c[0]}-${c[1]}`,
+        Teachers: uniqueTeachers,
+        Students: uniqueStudents
+      })
+    })
+
+    dataset.CompositeClassCodeList = uniqueCompositeClassCodes
+    dataset.CompositeClasses = compositeClasses
   }
 }

@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
 import logger from './logger.js'
+
 export default {
   async getStudentsForCourse (auth, courseId) {
     const classroom = google.classroom({ version: 'v1', auth })
@@ -165,24 +166,49 @@ export default {
 
     const aliases = []
     let nextPageToken = ''
-
+    // aliases.push(courseId)
     do {
       const params = {
         courseId,
         pageSize: 100,
         pageToken: nextPageToken || ''
       }
+      try {
+        const res = await classroom.courses.aliases.list(params)
 
-      const res = await classroom.courses.aliases.list(params)
+        if (res.data.aliases && res.data.aliases.length) {
+          res.data.aliases.forEach((e) => {
+            aliases.push(e.alias)
+          })
+        }
 
-      res.data.aliases.forEach((e) => {
-        aliases.push(e.alias)
-      })
-
-      nextPageToken = res.data.nextPageToken
+        nextPageToken = res.data.nextPageToken
+      } catch (e) {
+        const errorSource = 'getCourseAliases() - CourseId: ' + courseId
+        logger.logError(errorSource, e)
+        console.error(errorSource, e)
+      }
     } while (nextPageToken)
 
     return aliases
+  },
+
+  async deleteCourseAlias (auth, courseId, alias) {
+    const classroom = google.classroom({ version: 'v1', auth })
+
+    const params = {
+      courseId,
+      alias
+    }
+
+    try {
+      const res = await classroom.courses.aliases.delete(params)
+      return res.data
+    } catch (e) {
+      const errorSource = 'deleteCourseAlias()'
+      logger.logError(errorSource, e.response.data.error.message)
+      console.error(errorSource, e.response.data.error.message)
+    }
   },
 
   async createCourse (auth, courseAttributes) {

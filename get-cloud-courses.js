@@ -3,7 +3,6 @@ import googleAuth from './google-auth.js'
 
 export default async function getCloudCourses () {
   const cloudCourses = await getCourses(googleAuth(), 'classadmin@cheltsec.vic.edu.au')
-  // console.dir(cloudCourses, { maxArrayLength: null })
   return cloudCourses
 
   async function getCourses (auth, teacher) {
@@ -11,6 +10,8 @@ export default async function getCloudCourses () {
 
     const courses = []
     let nextPageToken = ''
+
+    console.log('Getting remote Google Classroom Courses...')
 
     do {
       const params = {

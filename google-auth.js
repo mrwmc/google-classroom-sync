@@ -2,7 +2,7 @@ import { google } from 'googleapis'
 import fs from 'fs'
 
 export default function g () {
-  const rawdata = fs.readFileSync('./tt-classroom-sync-0374f62a8cf4.json')
+  const rawdata = fs.readFileSync('./config/tt-classroom-sync-0374f62a8cf4.json')
   const keys = JSON.parse(rawdata)
 
   const SCOPES = ['https://www.googleapis.com/auth/classroom.courses',
