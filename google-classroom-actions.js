@@ -161,12 +161,17 @@ export default {
     }
   },
 
-  async getCourseAliases (auth, courseId) {
+  async getCourseAliases (auth, courseId, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    const sleep = delay => new Promise(resolve => setTimeout(resolve, delay))
+
+    await sleep(index * 50)
+    console.log(`Fetching aliases for course: ${courseId} ${index} of ${total}`)
 
     const aliases = []
     let nextPageToken = ''
-    // aliases.push(courseId)
+
     do {
       const params = {
         courseId,
@@ -190,7 +195,10 @@ export default {
       }
     } while (nextPageToken)
 
-    return aliases
+    return {
+      id: courseId,
+      aliases
+    }
   },
 
   async deleteCourseAlias (auth, courseId, alias) {

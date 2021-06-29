@@ -3,14 +3,42 @@ import googleAuth from './google-auth.js'
 import appSettings from './config/config.js'
 import classroomActions from './google-classroom-actions.js'
 import generateSubjectsFromCSV from './build-subjects-from-csv.js'
-import googleClassroomActions from './google-classroom-actions.js'
+// import googleClassroomActions from './google-classroom-actions.js'
 import getCloudCourses from './get-cloud-courses.js'
 
 async function main () {
   const auth = googleAuth()
 
-  // const remoteCourses = await getCloudCourses(auth, appSettings.classAdmin)
-  const subjects = generateSubjectsFromCSV()
+  const remoteCourses = await getCloudCourses(auth, appSettings.classAdmin)
+  const dataset = generateSubjectsFromCSV()
+  const aliasMap = await getCourseAliasesMap(auth, remoteCourses)
+  console.dir(aliasMap, { maxArrayLength: null })
+}
+
+async function getCourseAliasesMap (auth, remoteCourses) {
+  console.log('Mapping Google course Ids to Aliases')
+
+  const results = await Promise.all(
+    remoteCourses.map(async (course, index) => {
+      return await classroomActions.getCourseAliases(auth,
+        course.id,
+        index,
+        remoteCourses.length)
+    })
+  )
+
+  const aliasToCourseIdMap = []
+
+  results.forEach((result) => {
+    const couseId = result.id
+    result.aliases.forEach(e => {
+      aliasToCourseIdMap.push({
+        [e]: couseId
+      })
+    })
+  })
+
+  return aliasToCourseIdMap
 }
 
 async function updateCourseDescriptions (auth, subjects, remoteCourses) {
