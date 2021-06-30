@@ -8,7 +8,8 @@ export default {
     stream.write(log)
     stream.end()
   },
-  async logSuccess (data) {
 
+  async sleep (delay) {
+    return new Promise(resolve => setTimeout(resolve, delay))
   }
 }

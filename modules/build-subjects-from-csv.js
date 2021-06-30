@@ -1,5 +1,5 @@
 import csvToJson from 'convert-csv-to-json'
-import appSettings from './config/config.js'
+import appSettings from '../config/config.js'
 
 export default function buildSubjects () {
   const classNamesCsv = csvToJson.fieldDelimiter('"').getJsonFromCsv(`${appSettings.timetableFilesLocation}/Class Names.csv`)

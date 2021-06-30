@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
-import logger from './logger.js'
+import util from './util.js'
+import appSettings from '../config/config.js'
 
 export default {
   async getStudentsForCourse (auth, courseId) {
@@ -22,7 +23,7 @@ export default {
       return students
     } catch (e) {
       const errorSource = 'getTeachersForCourse() CourseId: ' + courseId
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
@@ -48,7 +49,7 @@ export default {
       return teachers
     } catch (e) {
       const errorSource = 'getTeachersForCourse() CourseId: ' + courseId
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
@@ -66,7 +67,7 @@ export default {
       return course
     } catch (e) {
       const errorSource = 'getClassroomCourse() - CourseId: ' + courseId
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
@@ -100,7 +101,7 @@ export default {
       return course
     } catch (e) {
       const errorSource = 'updateCourse() - CourseId: ' + id
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
@@ -118,7 +119,7 @@ export default {
       return res.data
     } catch (e) {
       const errorSource = 'addTeacherToCourse() - CourseId: ' + courseId
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
@@ -136,7 +137,7 @@ export default {
       return res.data
     } catch (e) {
       const errorSource = 'addStudentToCourse() - CourseId: ' + courseId
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
@@ -156,17 +157,19 @@ export default {
       return res.data
     } catch (e) {
       const errorSource = 'createCourseAlias() - CourseId: ' + courseId
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
 
   async getCourseAliases (auth, courseId, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+    index = index || 0
+    total = total || 0
 
-    const sleep = delay => new Promise(resolve => setTimeout(resolve, delay))
+    // const sleep = delay => new Promise(resolve => setTimeout(resolve, delay))
 
-    await sleep(index * 50)
+    await util.sleep(index * appSettings.taskDelay)
     console.log(`Fetching aliases for course: ${courseId} ${index} of ${total}`)
 
     const aliases = []
@@ -190,7 +193,7 @@ export default {
         nextPageToken = res.data.nextPageToken
       } catch (e) {
         const errorSource = 'getCourseAliases() - CourseId: ' + courseId
-        logger.logError(errorSource, e)
+        util.logError(errorSource, e)
         console.error(errorSource, e)
       }
     } while (nextPageToken)
@@ -214,7 +217,7 @@ export default {
       return res.data
     } catch (e) {
       const errorSource = 'deleteCourseAlias()'
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
@@ -224,7 +227,7 @@ export default {
 
     const params = {
       requestBody: {
-        id: 'd:' + courseAttributes.id,
+        id: courseAttributes.id,
         ownerId: courseAttributes.ownerId,
         name: courseAttributes.name,
         section: courseAttributes.section,
@@ -239,7 +242,7 @@ export default {
       return res.data
     } catch (e) {
       const errorSource = 'createCourse()'
-      logger.logError(errorSource, e.response.data.error.message)
+      util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   }
