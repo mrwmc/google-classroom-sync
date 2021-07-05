@@ -54,14 +54,14 @@ export default {
       const aliasToCourseIdMap = []
 
       results.forEach((result) => {
-        const couseId = result.id
+        const courseId = result.id
         result.aliases.forEach(e => {
           aliasToCourseIdMap.push({
-            [e]: couseId
+            [e]: courseId
           })
         })
       })
-      console.dir(aliasToCourseIdMap, { maxArrayLength: null })
+      // console.dir(aliasToCourseIdMap, { maxArrayLength: null })
       return aliasToCourseIdMap
     }
   },

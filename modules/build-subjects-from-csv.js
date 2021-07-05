@@ -13,7 +13,7 @@ export default function buildSubjects () {
   const subjects = getSubjectsAndClasses()
 
   addTeachersToSubjects()
-  addStudentsToSubjects()
+  addStudentsToClasses()
   addDomainLeaderToSubjects()
 
   dataset.subjects = subjects
@@ -64,8 +64,8 @@ export default function buildSubjects () {
 
         TimetableCsv.forEach((e) => {
           if (classCode === e.ClassCode) {
-            if (!teachers.includes(e.TeacherCode)) {
-              teachers.push(e.TeacherCode)
+            if (!teachers.includes(e.TeacherCode.toLowerCase() + appSettings.domain)) {
+              teachers.push(e.TeacherCode.toLowerCase() + appSettings.domain)
             }
           }
         })
@@ -74,7 +74,7 @@ export default function buildSubjects () {
     })
   }
 
-  function addStudentsToSubjects () {
+  function addStudentsToClasses () {
     subjects.forEach((subject) => {
       subject.ClassCodes.forEach((classCode, index) => {
         const item = classCode
@@ -82,7 +82,13 @@ export default function buildSubjects () {
 
         StudentLessonsCsv.forEach((lesson) => {
           if (lesson.ClassCode === item.ClassCode) {
-            subject.ClassCodes[itemIndex].Students.push(lesson.StudentCode)
+            const validUserCode = /^([a-z]{3})?\d+$/i
+
+            if (validUserCode.test(lesson.StudentCode)) {
+              subject.ClassCodes[itemIndex].Students.push(
+                lesson.StudentCode.toLowerCase() + appSettings.domain
+              )
+            }
           }
         })
       })
@@ -106,8 +112,8 @@ export default function buildSubjects () {
     subjects.forEach((subject, index) => {
       domainLeaders.forEach(e => {
         if (subject.Faculty.toLowerCase() === e.Domain.toLowerCase()) {
-          if (!subject.Teachers.includes(e.Member)) {
-            subjects[index].Teachers.push(e.Member)
+          if (!subject.Teachers.includes(e.Member.toLowerCase() + appSettings.domain)) {
+            subjects[index].Teachers.push(e.Member.toLowerCase() + appSettings.domain)
           }
         }
       })

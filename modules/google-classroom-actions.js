@@ -3,13 +3,19 @@ import util from './util.js'
 import appSettings from '../config/config.js'
 
 export default {
-  async getStudentsForCourse (auth, courseId) {
+  async getStudentsForCourse (auth, courseId, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
     const params = {
       courseId,
       pageSize: 100
     }
 
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(`Fetching students for course: ${courseId} ${index} of ${total}`)
     try {
       const res = await classroom.courses.students.list(params)
       const students = []
@@ -20,7 +26,7 @@ export default {
         })
       }
 
-      return students
+      return { courseId, students }
     } catch (e) {
       const errorSource = 'getTeachersForCourse() CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
@@ -54,7 +60,7 @@ export default {
     }
   },
 
-  async getClassroomCourse (auth, courseId) {
+  async getCourse (auth, courseId) {
     const classroom = google.classroom({ version: 'v1', auth })
 
     const params = {
@@ -133,7 +139,43 @@ export default {
     }
 
     try {
-      const res = await classroom.courses.teachers.create(params)
+      const res = await classroom.courses.students.create(params)
+      return res.data
+    } catch (e) {
+      const errorSource = 'addStudentToCourse() - CourseId: ' + courseId
+      util.logError(errorSource, e.response.data.error.message)
+      console.error(errorSource, e.response.data.error.message)
+    }
+  },
+
+  async removeStudentFromCourse (auth, courseId, student) {
+    const classroom = google.classroom({ version: 'v1', auth })
+
+    const params = {
+      courseId,
+      userId: student
+    }
+
+    try {
+      const res = await classroom.courses.students.delete(params)
+      return res.data
+    } catch (e) {
+      const errorSource = 'addStudentToCourse() - CourseId: ' + courseId
+      util.logError(errorSource, e.response.data.error.message)
+      console.error(errorSource, e.response.data.error.message)
+    }
+  },
+
+  async removeTeacherFromCourse (auth, courseId, teacher) {
+    const classroom = google.classroom({ version: 'v1', auth })
+
+    const params = {
+      courseId,
+      userId: teacher
+    }
+
+    try {
+      const res = await classroom.courses.teachers.delete(params)
       return res.data
     } catch (e) {
       const errorSource = 'addStudentToCourse() - CourseId: ' + courseId
@@ -167,7 +209,7 @@ export default {
     index = index || 0
     total = total || 0
 
-    // const sleep = delay => new Promise(resolve => setTimeout(resolve, delay))
+    index = index + 1
 
     await util.sleep(index * appSettings.taskDelay)
     console.log(`Fetching aliases for course: ${courseId} ${index} of ${total}`)
