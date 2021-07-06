@@ -1,6 +1,7 @@
 import { google } from 'googleapis'
 import util from './util.js'
 import appSettings from '../config/config.js'
+import chalk from 'chalk'
 
 export default {
   async getStudentsForCourse (auth, courseId, index, total) {
@@ -28,19 +29,22 @@ export default {
 
       return { courseId, students }
     } catch (e) {
-      const errorSource = 'getTeachersForCourse() CourseId: ' + courseId
+      const errorSource = 'getStudentsForCourse() CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
   },
 
-  async getTeachersForCourse (auth, courseId) {
+  async getTeachersForCourse (auth, courseId, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
 
     const params = {
       courseId: courseId,
       pageSize: 100
     }
+
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(chalk.whiteBright(`Fetching teachers for course: ${courseId} ${index} of ${total}`))
 
     try {
       const res = await classroom.courses.teachers.list(params)
@@ -52,7 +56,7 @@ export default {
         })
       }
 
-      return teachers
+      return { courseId, teachers }
     } catch (e) {
       const errorSource = 'getTeachersForCourse() CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
@@ -107,6 +111,32 @@ export default {
       return course
     } catch (e) {
       const errorSource = 'updateCourse() - CourseId: ' + id
+      util.logError(errorSource, e.response.data.error.message)
+      console.error(errorSource, e.response.data.error.message)
+    }
+  },
+
+  async changeCourseState (auth, courseAttributes) {
+    const classroom = google.classroom({ version: 'v1', auth })
+
+    const id = courseAttributes.id
+    const courseState = courseAttributes.courseState
+
+    const params = {
+      id,
+      updateMask: 'courseState',
+      requestBody: {
+        courseState
+      }
+    }
+
+    try {
+      const res = await classroom.courses.patch(params)
+      const course = res.data
+
+      return course
+    } catch (e) {
+      const errorSource = 'changeCourseState() - CourseId: ' + id
       util.logError(errorSource, e.response.data.error.message)
       console.error(errorSource, e.response.data.error.message)
     }
@@ -212,7 +242,7 @@ export default {
     index = index + 1
 
     await util.sleep(index * appSettings.taskDelay)
-    console.log(`Fetching aliases for course: ${courseId} ${index} of ${total}`)
+    console.log(chalk.white(`Fetching aliases for course: ${courseId} ${index} of ${total}`))
 
     const aliases = []
     let nextPageToken = ''

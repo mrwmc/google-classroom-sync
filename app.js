@@ -8,11 +8,15 @@ import generateSyncTasks from './modules/generate-sync-tasks.js'
 
 async function main () {
   const auth = googleAuth()
-  const dataset = generateSubjectsFromCSV()
   await googleClassroom.getCloudCourses(auth)
-
-  const tasks = await generateSyncTasks(dataset)
+  const aliasMap = googleClassroom.aliasMap
+  const dataset = generateSubjectsFromCSV()
+  const tasks = await generateSyncTasks(dataset, aliasMap)
   console.dir(tasks, { maxArrayLength: null })
+
+  function sync (tasks) {
+    
+  }
 }
 
 main().catch(console.error)

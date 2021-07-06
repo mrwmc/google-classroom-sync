@@ -32,13 +32,11 @@ export default {
         nextPageToken = res.data.nextPageToken
       } while (nextPageToken)
 
-      console.log(chalk.magentaBright('[ Done! ]'))
-
       return courses
     }
 
     async function getCourseAliasesMap (auth, remoteCourses) {
-      console.log(chalk.magentaBright('\n[ Mapping Google Classroom course Ids to Aliases ]'))
+      console.log(chalk.yellow('\n[ Mapping Google Classroom course Ids to Aliases... ]\n'))
 
       const results = await Promise.all(
         remoteCourses.map(async (course, index) => {
