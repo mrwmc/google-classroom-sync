@@ -123,7 +123,7 @@ export default {
     try {
       const res = await classroom.courses.patch(params)
       const course = res.data
-      console.log(chalk.greenBright(`Status: ${res.status} - ${res.statusText}\n`))
+      console.log(chalk.greenBright(`[ Updating course: ${id} - Status: ${res.status} - ${res.statusText} ]\n`))
       return course
     } catch (e) {
       const errorSource = 'updateCourse() - CourseId: ' + id
@@ -157,7 +157,7 @@ export default {
     try {
       const res = await classroom.courses.patch(params)
       const course = res.data
-      console.log(chalk.greenBright(`[ ${id} / ${courseState} ] - Status: ${res.status} - ${res.statusText}`))
+      console.log(chalk.greenBright(`[ ${id} / ${courseState} - Status: ${res.status} - ${res.statusText} ]`))
       return course
     } catch (e) {
       const errorSource = 'updateCourse() - CourseId: ' + id
