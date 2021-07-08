@@ -10,18 +10,20 @@ export default {
     index = index || 0
     total = total || 0
 
+    index = index + 1
+
     const params = {
       courseId,
       pageSize: 100
     }
 
     await util.sleep(index * appSettings.taskDelay)
-    console.log(`Fetching students for course: ${courseId} ${index} of ${total}`)
+    console.log(`Fetching students for course: ${courseId} ${index} of ${total} tasks`)
     try {
       const res = await classroom.courses.students.list(params)
       const students = []
 
-      if (res.data.students.length) {
+      if (Object.keys(res.data).length && res.data.students.length) {
         res.data.students.forEach(e => {
           students.push(e.profile.emailAddress)
         })
@@ -29,14 +31,20 @@ export default {
 
       return { courseId, students }
     } catch (e) {
+      console.log(e)
       const errorSource = 'getStudentsForCourse() CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
   async getTeachersForCourse (auth, courseId, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
 
     const params = {
       courseId: courseId,
@@ -44,13 +52,13 @@ export default {
     }
 
     await util.sleep(index * appSettings.taskDelay)
-    console.log(chalk.whiteBright(`Fetching teachers for course: ${courseId} ${index} of ${total}`))
+    console.log(chalk.whiteBright(`Fetching teachers for course: ${courseId} ${index} of ${total} tasks`))
 
     try {
       const res = await classroom.courses.teachers.list(params)
       const teachers = []
 
-      if (res.data.teachers.length) {
+      if (Object.keys(res.data).length && res.data.teachers.length) {
         res.data.teachers.forEach(e => {
           teachers.push(e.profile.emailAddress)
         })
@@ -60,7 +68,7 @@ export default {
     } catch (e) {
       const errorSource = 'getTeachersForCourse() CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
@@ -78,12 +86,17 @@ export default {
     } catch (e) {
       const errorSource = 'getClassroomCourse() - CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
-  async updateCourse (auth, courseAttributes) {
+  async updateCourse (auth, courseAttributes, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
 
     const id = courseAttributes.id
     const name = courseAttributes.name
@@ -104,20 +117,28 @@ export default {
       }
     }
 
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(chalk.whiteBright(`Updating course attributes: ${id} ${index} of ${total} tasks`))
+
     try {
       const res = await classroom.courses.patch(params)
       const course = res.data
-
+      console.log(chalk.greenBright(`Status: ${res.status} - ${res.statusText}\n`))
       return course
     } catch (e) {
       const errorSource = 'updateCourse() - CourseId: ' + id
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
-  async changeCourseState (auth, courseAttributes) {
+  async changeCourseState (auth, courseAttributes, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
 
     const id = courseAttributes.id
     const courseState = courseAttributes.courseState
@@ -130,87 +151,162 @@ export default {
       }
     }
 
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(chalk.whiteBright(`Changing course state for course: ${id} to ${courseState} ${index} of ${total} tasks`))
+
     try {
       const res = await classroom.courses.patch(params)
       const course = res.data
+      console.log(chalk.greenBright(`[ ${id} / ${courseState} ] - Status: ${res.status} - ${res.statusText}`))
+      return course
+    } catch (e) {
+      const errorSource = 'updateCourse() - CourseId: ' + id
+      util.logError(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
+    }
+  },
 
+  async updateCourseNames (auth, courseAttributes, index, total) {
+    const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
+
+    const id = courseAttributes.id
+    const name = courseAttributes.name
+    const descriptionHeading = courseAttributes.descriptionHeading
+
+    const params = {
+      id,
+      updateMask: 'name,descriptionHeading',
+      requestBody: {
+        name,
+        descriptionHeading
+      }
+    }
+
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(chalk.whiteBright(`Updating course name: ${id} ${index} of ${total}`))
+
+    try {
+      const res = await classroom.courses.patch(params)
+      const course = res.data
+      console.log(res.data)
       return course
     } catch (e) {
       const errorSource = 'changeCourseState() - CourseId: ' + id
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
-  async addTeacherToCourse (auth, courseId, teacher) {
+  async addTeacherToCourse (auth, courseId, teacher, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
 
     const params = {
       courseId,
       requestBody: { userId: teacher }
     }
 
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(chalk.whiteBright(`Adding teacher to course: ${courseId} teacher: ${teacher} ${index} of ${total} tasks`))
+
     try {
       const res = await classroom.courses.teachers.create(params)
+      console.log(chalk.greenBright(`[ ${courseId}/${teacher} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
-      const errorSource = 'addTeacherToCourse() - CourseId: ' + courseId
+      const errorSource = `addTeacherToCourse() - CourseId: ${courseId} Teacher: ${teacher}`
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
-  async addStudentToCourse (auth, courseId, student) {
+  async addStudentToCourse (auth, courseId, student, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
 
     const params = {
       courseId,
       requestBody: { userId: student }
     }
 
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(chalk.whiteBright(`Adding student to course: ${courseId} student: ${student} ${index} of ${total} tasks`))
+
     try {
       const res = await classroom.courses.students.create(params)
+      console.log(chalk.greenBright(`[ ${courseId} / ${student} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
       const errorSource = 'addStudentToCourse() - CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
-  async removeStudentFromCourse (auth, courseId, student) {
+  async removeStudentFromCourse (auth, courseId, student, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
 
     const params = {
       courseId,
       userId: student
     }
 
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(chalk.whiteBright(`Removing student from course: ${courseId} student: ${student} ${index} of ${total} tasks`))
+
     try {
       const res = await classroom.courses.students.delete(params)
+      console.log(chalk.greenBright(`[ ${courseId} / ${student} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
-      const errorSource = 'addStudentToCourse() - CourseId: ' + courseId
+      const errorSource = 'removeStudentFromCourse() - CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
-  async removeTeacherFromCourse (auth, courseId, teacher) {
+  async removeTeacherFromCourse (auth, courseId, teacher, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
 
     const params = {
       courseId,
       userId: teacher
     }
 
+    await util.sleep(index * appSettings.taskDelay)
+    console.log(chalk.whiteBright(`Removing teacher from course: ${courseId} teacher: ${teacher} ${index} of ${total} tasks`))
+
     try {
       const res = await classroom.courses.teachers.delete(params)
+      console.log(chalk.greenBright(`[ ${courseId} / ${teacher} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
-      const errorSource = 'addStudentToCourse() - CourseId: ' + courseId
+      const errorSource = `removeTeacherFromCourse() - CourseId: ${courseId} Teacher: ${teacher}`
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
@@ -226,11 +322,12 @@ export default {
 
     try {
       const res = await classroom.courses.aliases.create(params)
+      console.log(chalk.greenBright(`[ New Course Alias ${newAlias} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
       const errorSource = 'createCourseAlias() - CourseId: ' + courseId
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
@@ -242,7 +339,7 @@ export default {
     index = index + 1
 
     await util.sleep(index * appSettings.taskDelay)
-    console.log(chalk.white(`Fetching aliases for course: ${courseId} ${index} of ${total}`))
+    console.log(chalk.white(`Fetching aliases for course: ${courseId} ${index} of ${total} tasks`))
 
     const aliases = []
     let nextPageToken = ''
@@ -286,16 +383,22 @@ export default {
 
     try {
       const res = await classroom.courses.aliases.delete(params)
+      console.log(chalk.greenBright(`[ Delete Course Alias ${alias} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
       const errorSource = 'deleteCourseAlias()'
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   },
 
-  async createCourse (auth, courseAttributes) {
+  async createCourse (auth, courseAttributes, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
+
+    index = index || 0
+    total = total || 0
+
+    index = index + 1
 
     const params = {
       requestBody: {
@@ -309,13 +412,17 @@ export default {
       }
     }
 
+    await util.sleep(appSettings.createTaskDelay)
+    console.log(chalk.white(`Creating course: ${courseAttributes.id} ${index} of ${total} tasks`))
+
     try {
       const res = await classroom.courses.create(params)
+      console.log(chalk.greenBright(`[ Create Course ${courseAttributes.id} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
-      const errorSource = 'createCourse()'
+      const errorSource = `createCourse() ${courseAttributes.id}`
       util.logError(errorSource, e.response.data.error.message)
-      console.error(errorSource, e.response.data.error.message)
+      console.error(chalk.red(errorSource, e.response.data.error.message))
     }
   }
 }

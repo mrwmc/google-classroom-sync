@@ -59,7 +59,7 @@ export default {
           })
         })
       })
-      // console.dir(aliasToCourseIdMap, { maxArrayLength: null })
+
       return aliasToCourseIdMap
     }
   },

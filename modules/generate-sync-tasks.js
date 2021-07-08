@@ -5,9 +5,16 @@ import appSettings from '../config/config.js'
 import arrayDiff from './array-differ.js'
 import chalk from 'chalk'
 
-export default async function generateSyncTasks (dataset, coursesAliases) {
+export default async function generateSyncTasks (dataset, coursesAliases, courses) {
   const auth = googleAuth()
-  const tasks = []
+
+  const courseCreationTasks = []
+  const courseUpdatetasks = []
+  const studentCourseEnrolmentTasks = []
+  const studentCourseRemovalTasks = []
+  const teacherCourseEnrolmentTasks = []
+  const teacherCourseRemovalTasks = []
+  const courseArchiveTasks = []
 
   await generateSubjectTaks()
   await generateClassTasks()
@@ -16,11 +23,15 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
   await generateCourseArchiveTasks()
 
   async function generateCourseArchiveTasks () {
-    const classCourses = []
+    const currentClassCourses = []
     coursesAliases.forEach(item => {
       Object.keys(item).forEach(key => {
         if (key.substring(0, 6) === `d:${appSettings.academicYear}`) {
-          classCourses.push(key)
+          const course = googleClassroom.findCourse(key)
+
+          if (course.courseState === 'ACTIVE') {
+            currentClassCourses.push(key)
+          }
         }
       })
     })
@@ -31,11 +42,12 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
         currentTimetabledClasses.push(`d:${appSettings.academicYear}-${c.ClassCode.substring(1)}`)
       })
     })
-    const diffedItems = arrayDiff.diff(currentTimetabledClasses, classCourses)
+
+    const diffedItems = arrayDiff.diff(currentTimetabledClasses, currentClassCourses)
     const coursesToArchive = diffedItems.arr2Diff
 
     coursesToArchive.forEach((course) => {
-      tasks.push({
+      courseArchiveTasks.push({
         type: 'archiveCourse',
         courseAttributes: {
           id: course,
@@ -46,7 +58,7 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
   }
 
   async function generateSubjectTaks () {
-    console.log(chalk.yellow('\n [ Generating subject tasks... ]'))
+    console.log(chalk.yellow('\n[ Generating subject tasks ]'))
 
     dataset.subjects.forEach((s) => {
       const alias = `d:SUBJ-${s.SubjectCode.substring(1)}`
@@ -54,7 +66,7 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
 
       // create courses for subjects that don't exist at google's end
       if (!Object.keys(subjectCourse).length) {
-        tasks.push({
+        courseCreationTasks.push({
           type: 'createCourse',
           courseAttributes: {
             id: alias,
@@ -70,7 +82,7 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
 
       // update courses for subjects that do exisit
       if (Object.keys(subjectCourse).length) {
-        tasks.push({
+        courseUpdatetasks.push({
           type: 'updateCourse',
           courseAttributes: {
             id: alias,
@@ -86,7 +98,7 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
   }
 
   async function generateClassTasks () {
-    console.log(chalk.yellow('\n [ Generating class tasks... ]'))
+    console.log(chalk.yellow('\n[ Generating class tasks ]'))
 
     // process classes
     dataset.subjects.forEach((s) => {
@@ -99,12 +111,12 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
 
         // create courses for classes that don't yet exist
         if (!Object.keys(classCourse).length) {
-          tasks.push({
+          courseCreationTasks.push({
             type: 'createCourse',
             courseAttributes: {
               id: alias,
               ownerId: appSettings.classAdmin,
-              name: `${c.ClassCode.substring(1)}`,
+              name: `${c.ClassCode}`,
               section: subjectName,
               description: `Domain: ${faculty} - ${subjectName}`,
               descriptionHeading: `Subject Domain: ${s.Faculty}`,
@@ -115,11 +127,11 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
 
         // update class attributes for class which do exist
         if (Object.keys(classCourse).length) {
-          tasks.push({
+          courseUpdatetasks.push({
             type: 'updateCourse',
             courseAttributes: {
               id: alias,
-              name: `${c.ClassCode.substring(1)}`,
+              name: `${c.ClassCode}`,
               section: subjectName,
               description: `Domain: ${faculty} - ${subjectName}`,
               descriptionHeading: `Subject Domain: ${s.Faculty}`,
@@ -142,7 +154,8 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
       })
     })
 
-    console.log(chalk.yellow('\n[ Fetching Student Enrolments... ]\n'))
+    console.log(chalk.yellow('\n[ Fetching Current Student Course Enrolments ]\n'))
+
     const remoteCourseEnrolments = await Promise.all(
       timetabledClasses.map(async (c, index) => {
         const courseAlias = c.classCode
@@ -176,7 +189,7 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
 
             const studentsToAdd = diffedItems.arr1Diff
             studentsToAdd.forEach((student) => {
-              tasks.push({
+              studentCourseEnrolmentTasks.push({
                 type: 'addStudent',
                 courseId: rCourse.courseId,
                 student
@@ -185,21 +198,13 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
 
             const studentsToRemove = diffedItems.arr2Diff
             studentsToRemove.forEach((student) => {
-              tasks.push({
+              studentCourseRemovalTasks.push({
                 type: 'removeStudent',
                 courseId: rCourse.courseId,
                 student
               })
             })
           }
-        })
-      } else {
-        students.forEach((student) => {
-          tasks.push({
-            type: 'addStudent',
-            courseId: classCode,
-            student
-          })
         })
       }
     })
@@ -220,6 +225,8 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
         })
       })
     })
+
+    console.log(chalk.yellow('\n[ Fetching Current Teacher Course Enrolments ]\n'))
 
     const remoteCourseEnrolments = await Promise.all(
       subjectsAndClasses.map(async (sc, index) => {
@@ -254,7 +261,7 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
 
             const teachersToAdd = diffedItems.arr1Diff
             teachersToAdd.forEach((teacher) => {
-              tasks.push({
+              teacherCourseEnrolmentTasks.push({
                 type: 'addTeacher',
                 courseId: rCourse.courseId,
                 teacher
@@ -264,7 +271,7 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
             const teachersToRemove = diffedItems.arr2Diff
             teachersToRemove.forEach((teacher) => {
               if (teacher !== appSettings.classAdmin) {
-                tasks.push({
+                teacherCourseRemovalTasks.push({
                   type: 'removeTeacher',
                   courseId: rCourse.courseId,
                   teacher
@@ -273,17 +280,17 @@ export default async function generateSyncTasks (dataset, coursesAliases) {
             })
           }
         })
-      } else {
-        teachers.forEach((teacher) => {
-          tasks.push({
-            type: 'addTeacher',
-            courseId: course,
-            teacher
-          })
-        })
       }
     })
   }
 
-  return tasks
+  return {
+    courseCreationTasks,
+    courseUpdatetasks,
+    teacherCourseEnrolmentTasks,
+    teacherCourseRemovalTasks,
+    studentCourseEnrolmentTasks,
+    studentCourseRemovalTasks,
+    courseArchiveTasks
+  }
 }
