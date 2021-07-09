@@ -177,13 +177,13 @@ export default function buildSubjects () {
 
       StudentLessonsCsv.forEach((lesson) => {
         if (lesson.ClassCode === c[0] || lesson.ClassCode === c[1]) {
-          Students.push(lesson.StudentCode)
+          Students.push(`${lesson.StudentCode.toLowerCase()}${appSettings.domain}`)
         }
       })
 
       TimetableCsv.forEach((lesson) => {
         if (lesson.ClassCode === c[0] || lesson.ClassCode === c[1]) {
-          Teachers.push(lesson.TeacherCode)
+          Teachers.push(`${lesson.TeacherCode.toLowerCase()}${appSettings.domain}`)
         }
       })
 

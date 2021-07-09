@@ -157,7 +157,7 @@ export default {
     try {
       const res = await classroom.courses.patch(params)
       const course = res.data
-      console.log(chalk.greenBright(`[ ${id} / ${courseState} - Status: ${res.status} - ${res.statusText} ]`))
+      console.log(chalk.greenBright(`[ course: ${id} state: ${courseState} - Status: ${res.status} - ${res.statusText} ]`))
       return course
     } catch (e) {
       const errorSource = 'updateCourse() - CourseId: ' + id
@@ -250,7 +250,7 @@ export default {
       console.log(chalk.greenBright(`[ ${courseId} / ${student} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
-      const errorSource = 'addStudentToCourse() - CourseId: ' + courseId
+      const errorSource = `addStudentToCourse() - CourseId: ${courseId} StudentId: ${student}`
       util.logError(errorSource, e.response.data.error.message)
       console.error(chalk.red(errorSource, e.response.data.error.message))
     }
@@ -277,7 +277,7 @@ export default {
       console.log(chalk.greenBright(`[ ${courseId} / ${student} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
-      const errorSource = 'removeStudentFromCourse() - CourseId: ' + courseId
+      const errorSource = `removeStudentFromCourse() - CourseId: ${courseId} StudentId: ${student}`
       util.logError(errorSource, e.response.data.error.message)
       console.error(chalk.red(errorSource, e.response.data.error.message))
     }

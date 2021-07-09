@@ -10,10 +10,9 @@ async function main () {
   await googleClassroom.getCloudCourses(auth)
   const aliasMap = googleClassroom.aliasMap
   const courses = googleClassroom.cloudCourses
-
   const dataset = generateSubjectsFromCSV()
   const tasks = await generateSyncTasks(dataset, aliasMap, courses)
-
+  // console.dir(tasks.courseCreationTasks, { maxArrayLength: null })
   runSyncTasks(tasks)
 
   async function runSyncTasks (tasks) {
@@ -124,6 +123,8 @@ async function main () {
         })
       )
     }
+
+    console.log(chalk.magentaBright('\n[ Sync Tasks Completed ]\n'))
   }
 }
 

@@ -16,48 +16,154 @@ export default async function generateSyncTasks (dataset, coursesAliases, course
   const teacherCourseRemovalTasks = []
   const courseArchiveTasks = []
 
-  await generateSubjectTaks()
-  await generateClassTasks()
-  await generateStudentCourseEnrolmentTasks()
-  await generateTeacherCourseEnrolmentTasks()
-  await generateCourseArchiveTasks()
+  await getSubjectTasks()
+  await getClassTasks()
+  await getCompositeClassTasks()
+  await getStudentCourseEnrolmentTasks()
+  await getTeacherCourseEnrolmentTasks()
+  await getCourseArchiveTasks()
 
-  async function generateCourseArchiveTasks () {
-    const currentClassCourses = []
-    coursesAliases.forEach(item => {
-      Object.keys(item).forEach(key => {
-        if (key.substring(0, 6) === `d:${appSettings.academicYear}`) {
-          const course = googleClassroom.findCourse(key)
+  async function getCompositeClassTasks () {
+    console.log(chalk.yellow('\n[ Generating composite class tasks ]'))
 
-          if (course.courseState === 'ACTIVE') {
-            currentClassCourses.push(key)
+    dataset.CompositeClasses.forEach(async (c) => {
+      const alias = `d:2021-${c.ClassCode}`
+      const name = c.ClassCode
+      const compositeCourse = googleClassroom.findCourse(alias)
+
+      // create courses for composite classes that don't exist at google's end
+      if (!Object.keys(compositeCourse).length) {
+        courseCreationTasks.push({
+          type: 'createCourse',
+          courseAttributes: {
+            id: alias,
+            ownerId: appSettings.classAdmin,
+            name: `${name} (Composite)`,
+            section: c.SubjectName,
+            description: '',
+            descriptionHeading: '',
+            courseState: 'ACTIVE'
           }
-        }
-      })
+        })
+      }
+
+      // update composite class attributes for composite classes which do exist (this refreshes their attributes from the timetable)
+      if (Object.keys(compositeCourse).length) {
+        courseUpdatetasks.push({
+          type: 'updateCourse',
+          courseAttributes: {
+            id: alias,
+            ownerId: appSettings.classAdmin,
+            name: `${name} (Composite)`,
+            section: c.SubjectName,
+            description: '',
+            descriptionHeading: '',
+            courseState: 'ACTIVE'
+          }
+        })
+      }
     })
 
-    const currentTimetabledClasses = []
-    dataset.subjects.forEach((s) => {
-      s.ClassCodes.forEach((c) => {
-        currentTimetabledClasses.push(`d:${appSettings.academicYear}-${c.ClassCode.substring(1)}`)
+    console.log(chalk.yellow('\n[ Fetching Current Composite Class Enrolments ]\n'))
+
+    const remoteCourseStudentEnrolments = await Promise.all(
+      dataset.CompositeClasses.map(async (c, index) => {
+        const courseAlias = `d:${appSettings.academicYear}-${c.ClassCode}`
+
+        return await classroomActions.getStudentsForCourse(
+          auth,
+          courseAlias,
+          index,
+          dataset.CompositeClasses.length
+        )
       })
-    })
+    )
 
-    const diffedItems = arrayDiff.diff(currentTimetabledClasses, currentClassCourses)
-    const coursesToArchive = diffedItems.arr2Diff
+    const remoteCourseTeacherEnrolments = await Promise.all(
+      dataset.CompositeClasses.map(async (c, index) => {
+        const courseAlias = `d:${appSettings.academicYear}-${c.ClassCode}`
 
-    coursesToArchive.forEach((course) => {
-      courseArchiveTasks.push({
-        type: 'archiveCourse',
-        courseAttributes: {
-          id: course,
-          courseState: 'ARCHIVED'
+        return await classroomActions.getTeachersForCourse(
+          auth,
+          courseAlias,
+          index,
+          dataset.CompositeClasses.length
+        )
+      })
+    )
+
+    dataset.CompositeClasses.forEach((c) => {
+      const classCode = `d:${appSettings.academicYear}-${c.ClassCode}`
+      const teachers = c.Teachers
+      const students = c.Students
+
+      const remoteCourse = remoteCourseStudentEnrolments.filter(obj => {
+        if (obj) {
+          return obj.courseId === classCode
         }
       })
+
+      if (remoteCourse.length) {
+        remoteCourseStudentEnrolments.forEach(async (rCourse) => {
+          if (rCourse && rCourse.courseId === classCode) {
+            const diffedItems = arrayDiff.diff(
+              students,
+              rCourse.students
+            )
+
+            const studentsToAdd = diffedItems.arr1Diff
+            studentsToAdd.forEach((student) => {
+              studentCourseEnrolmentTasks.push({
+                type: 'addStudent',
+                courseId: rCourse.courseId,
+                student
+              })
+            })
+
+            const studentsToRemove = diffedItems.arr2Diff
+            studentsToRemove.forEach((student) => {
+              studentCourseRemovalTasks.push({
+                type: 'removeStudent',
+                courseId: rCourse.courseId,
+                student
+              })
+            })
+          }
+        })
+
+        remoteCourseTeacherEnrolments.forEach(async (rCourse) => {
+          if (rCourse && rCourse.courseId === classCode) {
+            const diffedItems = arrayDiff.diff(
+              teachers,
+              rCourse.teachers
+            )
+
+            const teachersToAdd = diffedItems.arr1Diff
+            teachersToAdd.forEach((teacher) => {
+              teacherCourseEnrolmentTasks.push({
+                type: 'addTeacher',
+                courseId: rCourse.courseId,
+                teacher
+              })
+            })
+
+            const teachersToRemove = diffedItems.arr2Diff
+            teachersToRemove.forEach((teacher) => {
+              if (teacher !== appSettings.classAdmin) {
+                teacherCourseRemovalTasks.push({
+                  type: 'removeTeacher',
+                  courseId: rCourse.courseId,
+                  teacher
+                })
+              }
+            })
+          }
+        })
+      }
     })
   }
 
-  async function generateSubjectTaks () {
+  async function getSubjectTasks () {
     console.log(chalk.yellow('\n[ Generating subject tasks ]'))
 
     dataset.subjects.forEach((s) => {
@@ -80,7 +186,7 @@ export default async function generateSyncTasks (dataset, coursesAliases, course
         })
       }
 
-      // update courses for subjects that do exisit
+      // update courses for subjects that do exisit (this refreshes their attributes from the timetable)
       if (Object.keys(subjectCourse).length) {
         courseUpdatetasks.push({
           type: 'updateCourse',
@@ -97,7 +203,7 @@ export default async function generateSyncTasks (dataset, coursesAliases, course
     })
   }
 
-  async function generateClassTasks () {
+  async function getClassTasks () {
     console.log(chalk.yellow('\n[ Generating class tasks ]'))
 
     // process classes
@@ -125,7 +231,7 @@ export default async function generateSyncTasks (dataset, coursesAliases, course
           })
         }
 
-        // update class attributes for class which do exist
+        // update class attributes for class which do exist (this refreshes their attributes from the timetable)
         if (Object.keys(classCourse).length) {
           courseUpdatetasks.push({
             type: 'updateCourse',
@@ -143,7 +249,7 @@ export default async function generateSyncTasks (dataset, coursesAliases, course
     })
   }
 
-  async function generateStudentCourseEnrolmentTasks () {
+  async function getStudentCourseEnrolmentTasks () {
     const timetabledClasses = []
     dataset.subjects.forEach((s) => {
       s.ClassCodes.forEach((c) => {
@@ -210,7 +316,7 @@ export default async function generateSyncTasks (dataset, coursesAliases, course
     })
   }
 
-  async function generateTeacherCourseEnrolmentTasks () {
+  async function getTeacherCourseEnrolmentTasks () {
     const subjectsAndClasses = []
     dataset.subjects.forEach((s) => {
       subjectsAndClasses.push({
@@ -281,6 +387,45 @@ export default async function generateSyncTasks (dataset, coursesAliases, course
           }
         })
       }
+    })
+  }
+
+  async function getCourseArchiveTasks () {
+    const currentClassCourses = []
+    coursesAliases.forEach(item => {
+      Object.keys(item).forEach(key => {
+        if (key.substring(0, 6) === `d:${appSettings.academicYear}`) {
+          const course = googleClassroom.findCourse(key)
+
+          if (course.courseState === 'ACTIVE') {
+            currentClassCourses.push(key)
+          }
+        }
+      })
+    })
+
+    const currentTimetabledClasses = []
+    dataset.subjects.forEach((s) => {
+      s.ClassCodes.forEach((c) => {
+        currentTimetabledClasses.push(`d:${appSettings.academicYear}-${c.ClassCode.substring(1)}`)
+      })
+    })
+
+    dataset.CompositeClasses.forEach((c) => {
+      currentTimetabledClasses.push(`d:${appSettings.academicYear}-${c.ClassCode}`)
+    })
+
+    const diffedItems = arrayDiff.diff(currentTimetabledClasses, currentClassCourses)
+    const coursesToArchive = diffedItems.arr2Diff
+
+    coursesToArchive.forEach((course) => {
+      courseArchiveTasks.push({
+        type: 'archiveCourse',
+        courseAttributes: {
+          id: course,
+          courseState: 'ARCHIVED'
+        }
+      })
     })
   }
 
