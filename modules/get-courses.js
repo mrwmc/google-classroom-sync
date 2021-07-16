@@ -4,20 +4,17 @@ import appSettings from '../config/config.js'
 import chalk from 'chalk'
 
 export default {
-  cloudCourses: [],
-  aliasMap: [],
+  async fetchCourses (auth, store) {
+    await getCoursesFromGoogle(auth, appSettings.classAdmin)
+    await getCourseAliasesMap(auth, store)
 
-  async getCloudCourses (auth) {
-    this.cloudCourses = await getCourses(auth, appSettings.classAdmin)
-    this.aliasMap = await getCourseAliasesMap(auth, this.cloudCourses)
-
-    async function getCourses (auth, teacher) {
+    async function getCoursesFromGoogle (auth, teacher) {
       const classroom = google.classroom({ version: 'v1', auth })
 
       const courses = []
       let nextPageToken = ''
 
-      console.log(chalk.yellow('\n[ Fetching remote Google Classroom Courses... ]'))
+      console.log(chalk.yellow(`\n[ Fetching remote Google Classroom Courses for ${appSettings.classAdmin} ]`))
 
       do {
         const params = {
@@ -32,43 +29,47 @@ export default {
         nextPageToken = res.data.nextPageToken
       } while (nextPageToken)
 
-      return courses
+      store.courses = courses
     }
 
-    async function getCourseAliasesMap (auth, remoteCourses) {
+    async function getCourseAliasesMap (auth, store) {
       console.log(chalk.yellow('\n[ Mapping Google Classroom course Ids to Aliases... ]\n'))
 
-      const results = await Promise.all(
-        remoteCourses.map(async (course, index) => {
+      const courses = store.courses
+
+      const courseAliases = await Promise.all(
+        courses.map(async (course, index) => {
           return await classroomActions.getCourseAliases(
             auth,
             course.id,
             index,
-            remoteCourses.length
+            courses.length
           )
         })
       )
 
       const aliasToCourseIdMap = []
-
-      results.forEach((result) => {
-        const courseId = result.id
-        result.aliases.forEach(e => {
+      courseAliases.forEach((alias) => {
+        const courseId = alias.id
+        alias.aliases.forEach(e => {
           aliasToCourseIdMap.push({
             [e]: courseId
           })
         })
       })
 
-      return aliasToCourseIdMap
+      store.courseAliases = aliasToCourseIdMap
     }
   },
 
-  findCourse (alias) {
+  findCourse (store, alias) {
+    const courses = store.courses
+    const courseAliases = store.courseAliases
+
     let courseId = ''
     let course = {}
 
-    this.aliasMap.forEach(item => {
+    courseAliases.forEach(item => {
       Object.keys(item).forEach(key => {
         if (key === alias) {
           courseId = item[key]
@@ -76,7 +77,7 @@ export default {
       })
     })
 
-    this.cloudCourses.forEach(c => {
+    courses.forEach(c => {
       if (c.id === courseId) {
         course = c
       }

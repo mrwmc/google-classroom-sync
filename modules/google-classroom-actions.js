@@ -392,7 +392,7 @@ export default {
     }
   },
 
-  async createCourse (auth, courseAttributes, index, total) {
+  async createCourse (store, auth, courseAttributes, index, total) {
     const classroom = google.classroom({ version: 'v1', auth })
 
     index = index || 0
@@ -420,6 +420,9 @@ export default {
       console.log(chalk.greenBright(`[ Create Course ${courseAttributes.id} - Status: ${res.status} - ${res.statusText} ]\n`))
       return res.data
     } catch (e) {
+      store.isCoursesCreationError = true
+      store.courseCreationTaskDelay = store.courseCreationTaskDelay * 2
+
       const errorSource = `createCourse() ${courseAttributes.id}`
       util.logError(errorSource, e.response.data.error.message)
       console.error(chalk.red(errorSource, e.response.data.error.message))

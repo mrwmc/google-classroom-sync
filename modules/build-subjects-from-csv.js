@@ -1,7 +1,7 @@
 import csvToJson from 'convert-csv-to-json'
 import appSettings from '../config/config.js'
 
-export default function buildSubjects () {
+export default function buildSubjects (store) {
   const classNamesCsv = csvToJson.fieldDelimiter('"').getJsonFromCsv(`${appSettings.timetableFilesLocation}/Class Names.csv`)
   const StudentLessonsCsv = csvToJson.fieldDelimiter('"').getJsonFromCsv(`${appSettings.timetableFilesLocation}/Student Lessons.csv`)
   const TimetableCsv = csvToJson.fieldDelimiter('"').getJsonFromCsv(`${appSettings.timetableFilesLocation}/Timetable.csv`)
@@ -17,8 +17,7 @@ export default function buildSubjects () {
   addDomainLeaderToSubjects()
 
   dataset.subjects = subjects
-
-  return dataset
+  store.timetable = dataset
 
   function getSubjectsAndClasses () {
     const sortedClassNamesCSV = classNamesCsv.sort((a, b) => a.SubjectCode.localeCompare(b.SubjectCode))
@@ -82,7 +81,7 @@ export default function buildSubjects () {
 
         StudentLessonsCsv.forEach((lesson) => {
           if (lesson.ClassCode === item.ClassCode) {
-            const validUserCode = /^([a-z]{3})?\d+$/i
+            const validUserCode = /^([a-z-]{3})?\d+$/i
 
             if (validUserCode.test(lesson.StudentCode)) {
               subject.ClassCodes[itemIndex].Students.push(
