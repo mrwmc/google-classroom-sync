@@ -160,22 +160,9 @@ export default {
     })
   },
 
-  async getCompositeClassCourseEnrolmentTasks (store) {
-    console.log(chalk.yellow('\n[ Fetching Current Composite Class Enrolments ]\n'))
+  async getCompositeTeacherCourseEnrolmentTasks (store) {
+    console.log(chalk.yellow('\n[ Fetching Current Composite Teacher Enrolments ]\n'))
     const auth = googleAuth()
-
-    const remoteCourseStudentEnrolments = await Promise.all(
-      store.timetable.CompositeClasses.map(async (c, index) => {
-        const courseAlias = `d:${appSettings.academicYear}-${c.ClassCode}`
-
-        return await classroomActions.getStudentsForCourse(
-          auth,
-          courseAlias,
-          index,
-          store.timetable.CompositeClasses.length
-        )
-      })
-    )
 
     const remoteCourseTeacherEnrolments = await Promise.all(
       store.timetable.CompositeClasses.map(async (c, index) => {
@@ -193,6 +180,64 @@ export default {
     store.timetable.CompositeClasses.forEach((c) => {
       const classCode = `d:${appSettings.academicYear}-${c.ClassCode}`
       const teachers = c.Teachers
+
+      const remoteCourse = remoteCourseTeacherEnrolments.filter(obj => {
+        if (obj) {
+          return obj.courseId === classCode
+        }
+      })
+      if (remoteCourse.length) {
+        remoteCourseTeacherEnrolments.forEach(async (rCourse) => {
+          if (rCourse && rCourse.courseId === classCode) {
+            const diffedItems = arrayDiff(
+              teachers,
+              rCourse.teachers
+            )
+
+            const teachersToAdd = diffedItems.arr1Diff
+            teachersToAdd.forEach((teacher) => {
+              store.teacherCourseEnrolmentTasks.push({
+                type: 'addTeacher',
+                courseId: rCourse.courseId,
+                teacher
+              })
+            })
+
+            const teachersToRemove = diffedItems.arr2Diff
+            teachersToRemove.forEach((teacher) => {
+              if (teacher !== appSettings.classAdmin) {
+                store.teacherCourseRemovalTasks.push({
+                  type: 'removeTeacher',
+                  courseId: rCourse.courseId,
+                  teacher
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  },
+
+  async getCompositeStudentCourseEnrolmentTasks(store) {
+    console.log(chalk.yellow('\n[ Fetching Current Composite Student Enrolments ]\n'))
+    const auth = googleAuth()
+
+    const remoteCourseStudentEnrolments = await Promise.all(
+      store.timetable.CompositeClasses.map(async (c, index) => {
+        const courseAlias = `d:${appSettings.academicYear}-${c.ClassCode}`
+
+        return await classroomActions.getStudentsForCourse(
+          auth,
+          courseAlias,
+          index,
+          store.timetable.CompositeClasses.length
+        )
+      })
+    )
+
+    store.timetable.CompositeClasses.forEach((c) => {
+      const classCode = `d:${appSettings.academicYear}-${c.ClassCode}`
       const students = c.Students
 
       const remoteCourse = remoteCourseStudentEnrolments.filter(obj => {
@@ -225,35 +270,6 @@ export default {
                 courseId: rCourse.courseId,
                 student
               })
-            })
-          }
-        })
-
-        remoteCourseTeacherEnrolments.forEach(async (rCourse) => {
-          if (rCourse && rCourse.courseId === classCode) {
-            const diffedItems = arrayDiff(
-              teachers,
-              rCourse.teachers
-            )
-
-            const teachersToAdd = diffedItems.arr1Diff
-            teachersToAdd.forEach((teacher) => {
-              store.teacherCourseEnrolmentTasks.push({
-                type: 'addTeacher',
-                courseId: rCourse.courseId,
-                teacher
-              })
-            })
-
-            const teachersToRemove = diffedItems.arr2Diff
-            teachersToRemove.forEach((teacher) => {
-              if (teacher !== appSettings.classAdmin) {
-                store.teacherCourseRemovalTasks.push({
-                  type: 'removeTeacher',
-                  courseId: rCourse.courseId,
-                  teacher
-                })
-              }
             })
           }
         })

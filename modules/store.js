@@ -11,5 +11,9 @@ export default {
   courseArchiveTasks: [],
   isCoursesCreationError: false,
   courseCreationTaskDelay: 32000,
-  taskDelay: 101
+  taskDelay: 101,
+  state: {
+    isGeneratedTeacherEnrolmentTasks: false,
+    isGeneratedStudentEnrolmentTasks: false
+  }
 }

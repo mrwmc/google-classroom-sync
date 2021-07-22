@@ -14,31 +14,99 @@ async function main () {
   generateSubjectsFromCSV(store)
   await getCourses.fetchCourses(auth, store)
 
-  if (args.includes('-COURSES'.toLocaleLowerCase())) {
+  if (args.includes('--ALL-TASKS'.toLowerCase())) {
+    await generateSyncTasks.getSubjectCourseCreationTasks(store)
+    await generateSyncTasks.getClassCourseCreationTasks(store)
+    await generateSyncTasks.getCompositeClassCourseCreationTasks(store)
+    await invokeCourseCreationTasks(store)
+
+    await generateSyncTasks.getSubjectCourseAttributeUpdateTasks(store)
+    await generateSyncTasks.getClassCourseAttributeUpdateTasks(store)
+    await generateSyncTasks.getCompositeClassCourseAttributeUpdateTasks(store)
+    await invokeCourseUpdateTasks(store)
+
+    await generateSyncTasks.getCompositeTeacherCourseEnrolmentTasks(store)
+    await generateSyncTasks.getTeacherCourseEnrolmentTasks(store)
+    await invokeTeacherCourseEnrolmentTasks(store)
+    await invokeTeacherCourseRemovalTasks(store)
+
+    await generateSyncTasks.getCompositeStudentCourseEnrolmentTasks(store)
+    await generateSyncTasks.getStudentCourseEnrolmentTasks(store)
+    await invokeStudentCourseEnrolmentTasks(store)
+    await invokeStudentCourseRemovalTasks(store)
+
+    await generateSyncTasks.getCourseArchiveTasks(store)
+    await invokeCourseArchiveTasks(store)
+
+    console.log(chalk.magentaBright('\n[ Selected Sync Tasks Completed ]\n'))
+
+    process.exit(1)
+  }
+
+  if (args.includes('--ADD-COURSES'.toLowerCase())) {
     await generateSyncTasks.getSubjectCourseCreationTasks(store)
     await generateSyncTasks.getClassCourseCreationTasks(store)
     await generateSyncTasks.getCompositeClassCourseCreationTasks(store)
 
-    await runCourseCreationTasks(store)
+    await invokeCourseCreationTasks(store)
   }
 
-  if (args.includes('-UPDATE'.toLocaleLowerCase())) {
+  if (args.includes('--UPDATE-COURSES'.toLowerCase())) {
     await generateSyncTasks.getSubjectCourseAttributeUpdateTasks(store)
     await generateSyncTasks.getClassCourseAttributeUpdateTasks(store)
     await generateSyncTasks.getCompositeClassCourseAttributeUpdateTasks(store)
 
-    await runCourseUpdateTasks(store)
+    await invokeCourseUpdateTasks(store)
   }
 
-  if (args.includes('-TEACHERS'.toLocaleLowerCase())) {
-    await generateSyncTasks.getTeacherCourseEnrolmentTasks(store)
+  if (args.includes('--ADD-TEACHERS'.toLowerCase())) {
+    if (!store.state.isGeneratedTeacherEnrolmentTasks) {
+      await generateSyncTasks.getCompositeTeacherCourseEnrolmentTasks(store)
+      await generateSyncTasks.getTeacherCourseEnrolmentTasks(store)
+      store.state.isGeneratedTeacherEnrolmentTasks = true
+    }
 
-    await runTeacherCourseEnrolmentTasks(store)
+    await invokeTeacherCourseEnrolmentTasks(store)
+  }
+
+  if (args.includes('--REMOVE-TEACHERS'.toLowerCase())) {
+    if (!store.state.isGeneratedTeacherEnrolmentTasks) {
+      await generateSyncTasks.getCompositeTeacherCourseEnrolmentTasks(store)
+      await generateSyncTasks.getTeacherCourseEnrolmentTasks(store)
+      store.state.isGeneratedTeacherEnrolmentTasks = true
+    }
+
+    await invokeTeacherCourseRemovalTasks(store)
+  }
+
+  if (args.includes('--ADD-STUDENTS'.toLowerCase())) {
+    if (!store.state.isGeneratedStudentEnrolmentTasks) {
+      await generateSyncTasks.getCompositeStudentCourseEnrolmentTasks(store)
+      await generateSyncTasks.getStudentCourseEnrolmentTasks(store)
+      store.state.isGeneratedStudentEnrolmentTasks = true
+    }
+
+    await invokeStudentCourseEnrolmentTasks(store)
+  }
+
+  if (args.includes('--REMOVE-STUDENTS'.toLowerCase())) {
+    if (!store.state.isGeneratedStudentEnrolmentTasks) {
+      await generateSyncTasks.getCompositeStudentCourseEnrolmentTasks(store)
+      await generateSyncTasks.getStudentCourseEnrolmentTasks(store)
+      store.state.isGeneratedStudentEnrolmentTasks = true
+    }
+    await invokeStudentCourseRemovalTasks(store)
+  }
+
+  if (args.includes('--ARCHIVE-COURSES'.toLowerCase())) {
+    await generateSyncTasks.getCourseArchiveTasks(store)
+
+    await invokeCourseArchiveTasks(store)
   }
 
   console.log(chalk.magentaBright('\n[ Selected Sync Tasks Completed ]\n'))
 
-  async function runCourseCreationTasks (store) {
+  async function invokeCourseCreationTasks (store) {
     if (store.courseCreationTasks.length) {
       console.log(chalk.yellow('\n[ Running Course Creation Tasks ]\n'))
 
@@ -53,12 +121,12 @@ async function main () {
 
       if (store.isCoursesCreationError) {
         store.isCoursesCreationError = false
-        await runCourseCreationTasks(store)
+        await invokeCourseCreationTasks(store)
       }
     }
   }
 
-  async function runCourseUpdateTasks (store) {
+  async function invokeCourseUpdateTasks (store) {
     if (store.courseUpdatetasks.length) {
       console.log(chalk.yellow('\n[ Running Course Attribute Update Tasks ]\n'))
 
@@ -75,7 +143,7 @@ async function main () {
     }
   }
 
-  async function runTeacherCourseEnrolmentTasks (store) {
+  async function invokeTeacherCourseEnrolmentTasks (store) {
     if (store.teacherCourseEnrolmentTasks.length) {
       console.log(chalk.yellow('\n[ Running Teacher Course Enrolment Tasks ]\n'))
 
@@ -93,116 +161,75 @@ async function main () {
     }
   }
 
-  async function runSyncTasks (tasks) {
-    if (tasks.courseCreationTasks.length) {
-      console.log(chalk.yellow('\n[ Running Course Creation Tasks ]\n'))
-
-      for (const [index, task] of tasks.courseCreationTasks.entries()) {
-        console.log(task)
-        await classroomActions.createCourse(
-          auth,
-          task.courseAttributes,
-          index,
-          tasks.courseCreationTasks.length
-        )
-      }
-    }
-
-    if (tasks.courseUpdatetasks.length) {
-      console.log(chalk.yellow('\n[ Running Course Attribute Update Tasks ]\n'))
-
-      await Promise.all(
-        tasks.courseUpdatetasks.map(async (task, index) => {
-          return await classroomActions.updateCourse(
-            auth,
-            task.courseAttributes,
-            index,
-            tasks.courseUpdatetasks.length
-          )
-        })
-      )
-    }
-
-    if (tasks.teacherCourseEnrolmentTasks.length) {
-      console.log(chalk.yellow('\n[ Running Teacher Course Enrolment Tasks ]\n'))
-
-      await Promise.all(
-        tasks.teacherCourseEnrolmentTasks.map(async (task, index) => {
-          return await classroomActions.addTeacherToCourse(
-            auth,
-            task.courseId,
-            task.teacher,
-            index,
-            tasks.teacherCourseEnrolmentTasks.length
-          )
-        })
-      )
-    }
-
-    if (tasks.teacherCourseRemovalTasks.length) {
+  async function invokeTeacherCourseRemovalTasks (store) {
+    if (store.teacherCourseRemovalTasks.length) {
       console.log(chalk.yellow('\n[ Running Teacher Course Removal Tasks ]\n'))
 
       await Promise.all(
-        tasks.teacherCourseRemovalTasks.map(async (task, index) => {
+        store.teacherCourseRemovalTasks.map(async (task, index) => {
           return await classroomActions.removeTeacherFromCourse(
             auth,
             task.courseId,
             task.teacher,
             index,
-            tasks.teacherCourseRemovalTasks.length
+            store.teacherCourseRemovalTasks.length
           )
         })
       )
     }
+  }
 
-    if (tasks.studentCourseEnrolmentTasks.length) {
+  async function invokeStudentCourseEnrolmentTasks (store) {
+    if (store.studentCourseEnrolmentTasks.length) {
       console.log(chalk.yellow('\n[ Running Student Course Enrolment Tasks ]\n'))
 
       await Promise.all(
-        tasks.studentCourseEnrolmentTasks.map(async (task, index) => {
+        store.studentCourseEnrolmentTasks.map(async (task, index) => {
           return await classroomActions.addStudentToCourse(
             auth,
             task.courseId,
             task.student,
             index,
-            tasks.studentCourseEnrolmentTasks.length
+            store.studentCourseEnrolmentTasks.length
           )
         })
       )
     }
+  }
 
-    if (tasks.studentCourseRemovalTasks.length) {
+  async function invokeStudentCourseRemovalTasks () {
+    if (store.studentCourseRemovalTasks.length) {
       console.log(chalk.yellow('\n[ Running Student Course Removal Tasks ]\n'))
 
       await Promise.all(
-        tasks.studentCourseRemovalTasks.map(async (task, index) => {
+        store.studentCourseRemovalTasks.map(async (task, index) => {
           return await classroomActions.removeStudentFromCourse(
             auth,
             task.courseId,
             task.student,
             index,
-            tasks.studentCourseRemovalTasks.length
+            store.studentCourseRemovalTasks.length
           )
         })
       )
     }
+  }
 
-    if (tasks.courseArchiveTasks.length) {
+  async function invokeCourseArchiveTasks (store) {
+    if (store.courseArchiveTasks.length) {
       console.log(chalk.yellow('\n[ Archiving Non-Timetabled Courses ]\n'))
 
       await Promise.all(
-        tasks.courseArchiveTasks.map(async (task, index) => {
+        store.courseArchiveTasks.map(async (task, index) => {
           return await classroomActions.changeCourseState(
             auth,
             task.courseAttributes,
             index,
-            tasks.courseArchiveTasks.length
+            store.courseArchiveTasks.length
           )
         })
       )
     }
-
-    console.log(chalk.magentaBright('\n[ Selected Sync Tasks Completed ]\n'))
   }
 }
 
