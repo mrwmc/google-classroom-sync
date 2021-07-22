@@ -15,26 +15,31 @@ async function main () {
   await getCourses.fetchCourses(auth, store)
 
   if (args.includes('--ALL-TASKS'.toLowerCase())) {
+    // course creation
     await generateSyncTasks.getSubjectCourseCreationTasks(store)
     await generateSyncTasks.getClassCourseCreationTasks(store)
     await generateSyncTasks.getCompositeClassCourseCreationTasks(store)
     await invokeCourseCreationTasks(store)
 
+    // update course attributes
     await generateSyncTasks.getSubjectCourseAttributeUpdateTasks(store)
     await generateSyncTasks.getClassCourseAttributeUpdateTasks(store)
     await generateSyncTasks.getCompositeClassCourseAttributeUpdateTasks(store)
     await invokeCourseUpdateTasks(store)
 
+    // add/remove teachers
     await generateSyncTasks.getCompositeTeacherCourseEnrolmentTasks(store)
     await generateSyncTasks.getTeacherCourseEnrolmentTasks(store)
     await invokeTeacherCourseEnrolmentTasks(store)
     await invokeTeacherCourseRemovalTasks(store)
 
+    // add/remove students
     await generateSyncTasks.getCompositeStudentCourseEnrolmentTasks(store)
     await generateSyncTasks.getStudentCourseEnrolmentTasks(store)
     await invokeStudentCourseEnrolmentTasks(store)
     await invokeStudentCourseRemovalTasks(store)
 
+    // archive old courses
     await generateSyncTasks.getCourseArchiveTasks(store)
     await invokeCourseArchiveTasks(store)
 

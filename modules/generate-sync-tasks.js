@@ -424,10 +424,10 @@ export default {
     console.log(chalk.yellow('\n[ Generating Course Archive Tasks ]\n'))
 
     const currentClassCourses = []
-    store.coursesAliases.forEach(item => {
+    store.courseAliases.forEach(item => {
       Object.keys(item).forEach(key => {
         if (key.substring(0, 6) === `d:${appSettings.academicYear}`) {
-          const course = getCourses.findCourse(key)
+          const course = getCourses.findCourse(store, key)
 
           if (course.courseState === 'ACTIVE') {
             currentClassCourses.push(key)
