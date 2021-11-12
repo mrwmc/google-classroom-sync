@@ -1,21 +1,17 @@
 import { google } from 'googleapis'
 import fs from 'fs'
+import appSettings from '../config/config.js'
 
 export default function g () {
-  const rawdata = fs.readFileSync('./config/tt-classroom-sync-0374f62a8cf4.json')
-  const keys = JSON.parse(rawdata)
+  const keyFile = fs.readFileSync(appSettings.keyFile)
+  const keys = JSON.parse(keyFile)
 
-  const SCOPES = ['https://www.googleapis.com/auth/classroom.courses',
-    'https://www.googleapis.com/auth/classroom.rosters',
-    'https://www.googleapis.com/auth/classroom.rosters.readonly',
-    'https://www.googleapis.com/auth/classroom.profile.emails',
-    'https://www.googleapis.com/auth/classroom.profile.photos'
-  ]
+  const scopes = appSettings.scopes
 
   const auth = new google.auth.JWT({
     email: keys.client_email,
     key: keys.private_key,
-    scopes: SCOPES,
+    scopes,
     subject: 'superadmin@cheltsec.vic.edu.au'
   })
 
