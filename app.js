@@ -11,6 +11,16 @@ async function main () {
   const args = processArguments(process.argv)
   const auth = googleAuth()
 
+  let isShowTasksOnly = false
+  if (args.includes('--SHOW-TASKS'.toLowerCase())) {
+    isShowTasksOnly = true
+  }
+
+  if (isShowTasksOnly && args.includes('--ALL-TASKS'.toLowerCase())) {
+    console.log(chalk.red('\nShow Tasks flag can only be used with individual task groups. Script will now exit.\n'))
+    process.exit(1)
+  }
+
   generateSubjectsFromCSV(store)
   await getCourses.fetchCourses(auth, store)
 
@@ -53,7 +63,12 @@ async function main () {
     await generateSyncTasks.getClassCourseCreationTasks(store)
     await generateSyncTasks.getCompositeClassCourseCreationTasks(store)
 
-    await invokeCourseCreationTasks(store)
+    if (!isShowTasksOnly) {
+      invokeCourseCreationTasks(store)
+    } else {
+      console.dir(store.courseCreationTasks, { maxArrayLength: null })
+      console.log(`\n${store.courseCreationTasks.length} Tasks`)
+    }
   }
 
   if (args.includes('--UPDATE-COURSES'.toLowerCase())) {
@@ -61,7 +76,12 @@ async function main () {
     await generateSyncTasks.getClassCourseAttributeUpdateTasks(store)
     await generateSyncTasks.getCompositeClassCourseAttributeUpdateTasks(store)
 
-    await invokeCourseUpdateTasks(store)
+    if (!isShowTasksOnly) {
+      await invokeCourseUpdateTasks(store)
+    } else {
+      console.dir(store.courseUpdatetasks, { maxArrayLength: null })
+      console.log(`\n${store.courseUpdatetasks.length} Tasks`)
+    }
   }
 
   if (args.includes('--ADD-TEACHERS'.toLowerCase())) {
@@ -71,7 +91,12 @@ async function main () {
       store.state.isGeneratedTeacherEnrolmentTasks = true
     }
 
-    await invokeTeacherCourseEnrolmentTasks(store)
+    if (!isShowTasksOnly) {
+      await invokeTeacherCourseEnrolmentTasks(store)
+    } else {
+      console.dir(store.teacherCourseEnrolmentTasks, { maxArrayLength: null })
+      console.log(`\n${store.teacherCourseEnrolmentTasks.length} Tasks`)
+    }
   }
 
   if (args.includes('--REMOVE-TEACHERS'.toLowerCase())) {
@@ -81,7 +106,12 @@ async function main () {
       store.state.isGeneratedTeacherEnrolmentTasks = true
     }
 
-    await invokeTeacherCourseRemovalTasks(store)
+    if (!isShowTasksOnly) {
+      await invokeTeacherCourseRemovalTasks(store)
+    } else {
+      console.dir(store.teacherCourseRemovalTasks, { maxArrayLength: null })
+      console.log(`\n${store.teacherCourseRemovalTasks.length} Tasks`)
+    }
   }
 
   if (args.includes('--ADD-STUDENTS'.toLowerCase())) {
@@ -91,7 +121,12 @@ async function main () {
       store.state.isGeneratedStudentEnrolmentTasks = true
     }
 
-    await invokeStudentCourseEnrolmentTasks(store)
+    if (!isShowTasksOnly) {
+      await invokeStudentCourseEnrolmentTasks(store)
+    } else {
+      console.dir(store.studentCourseEnrolmentTasks, { maxArrayLength: null })
+      console.log(`\n${store.studentCourseEnrolmentTasks.length} Tasks`)
+    }
   }
 
   if (args.includes('--REMOVE-STUDENTS'.toLowerCase())) {
@@ -100,16 +135,27 @@ async function main () {
       await generateSyncTasks.getStudentCourseEnrolmentTasks(store)
       store.state.isGeneratedStudentEnrolmentTasks = true
     }
-    await invokeStudentCourseRemovalTasks(store)
+
+    if (!isShowTasksOnly) {
+      await invokeStudentCourseRemovalTasks(store)
+    } else {
+      console.dir(store.studentCourseRemovalTasks, { maxArrayLength: null })
+      console.log(`\n${store.studentCourseRemovalTasks.length} Tasks`)
+    }
   }
 
   if (args.includes('--ARCHIVE-COURSES'.toLowerCase())) {
     await generateSyncTasks.getCourseArchiveTasks(store)
 
-    await invokeCourseArchiveTasks(store)
+    if (!isShowTasksOnly) {
+      await invokeCourseArchiveTasks(store)
+    } else {
+      console.dir(store.courseArchiveTasks, { maxArrayLength: null })
+      console.log(`\n${store.courseArchiveTasks.length} Tasks`)
+    }
   }
 
-  console.log(chalk.magentaBright('\n[ Selected Sync Tasks Completed ]\n'))
+  console.log(chalk.magentaBright('\n[ Finished! ]\n'))
 
   async function invokeCourseCreationTasks (store) {
     if (store.courseCreationTasks.length) {
