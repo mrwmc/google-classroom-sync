@@ -63,7 +63,7 @@ export default {
     console.log(chalk.yellow('\n[ Generating Composite ClassCode Course Creation Tasks ]\n'))
 
     store.timetable.CompositeClasses.forEach(async (c) => {
-      const alias = `d:2021-${c.ClassCode}`
+      const alias = `d:${appSettings.academicYear}-${c.ClassCode}`
       const name = c.ClassCode
       const compositeCourse = getCourses.findCourse(store, alias)
 
@@ -426,7 +426,7 @@ export default {
     const currentClassCourses = []
     store.courseAliases.forEach(item => {
       Object.keys(item).forEach(key => {
-        if (key.substring(0, 6) === `d:${appSettings.academicYear}`) {
+        if (key.substring(0, 6) !== 'd:SUBJ') {
           const course = getCourses.findCourse(store, key)
 
           if (course.courseState === 'ACTIVE') {
