@@ -28,29 +28,37 @@ export default function buildSubjects (store) {
     let arrayPosition = -1
 
     sortedClassNamesCSV.forEach((e) => {
-      const faculty = e.FacultyName.split('_')[0]
-
-      if (!processedSubjects.includes(e.SubjectCode)) {
-        subjects.push({
-          SubjectCode: e.SubjectCode,
-          SubjectName: e.SubjectName.replace(/['"]+/g, ''),
-          Faculty: faculty,
-          Teachers: [],
-          ClassCodes: []
-        })
-        arrayPosition += 1
-      }
-      if (!dataset.CompositeClassCodeList.includes(e.ClassCode)) {
-        subjects[arrayPosition].ClassCodes.push({
-          ClassCode: e.ClassCode,
-          Students: []
-        })
+      if (!isSubjectExcepted(e.SubjectCode)) {
+        const faculty = e.FacultyName.split('_')[0]
+        if (!processedSubjects.includes(e.SubjectCode)) {
+          subjects.push({
+            SubjectCode: e.SubjectCode,
+            SubjectName: e.SubjectName.replace(/['"]+/g, ''),
+            Faculty: faculty,
+            Teachers: [],
+            ClassCodes: []
+          })
+          arrayPosition += 1
+        }
+        if (!dataset.CompositeClassCodeList.includes(e.ClassCode)) {
+          subjects[arrayPosition].ClassCodes.push({
+            ClassCode: e.ClassCode,
+            Students: []
+          })
+        }
       }
 
       processedSubjects.push(e.SubjectCode)
     })
 
     return subjects
+
+    function isSubjectExcepted (subjectName) {
+      const subjectExceptions = appSettings.subjectExceptions
+      const subjectNameWithoutSemesterPrefix = subjectName.substring(1)
+
+      return subjectExceptions.includes(subjectNameWithoutSemesterPrefix)
+    }
   }
 
   function addTeachersToSubjects () {
