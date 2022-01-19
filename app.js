@@ -163,6 +163,7 @@ async function main () {
 
       for (const [index, task] of store.courseCreationTasks.entries()) {
         await classroomActions.createCourse(
+          store,
           auth,
           task.courseAttributes,
           index,
