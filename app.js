@@ -66,8 +66,10 @@ async function main () {
     if (!isShowTasksOnly) {
       invokeCourseCreationTasks(store)
     } else {
-      console.dir(store.courseCreationTasks, { maxArrayLength: null })
-      console.log(`\n${store.courseCreationTasks.length} Tasks`)
+      if (store.courseCreationTasks.length) {
+        console.dir(store.courseCreationTasks, { maxArrayLength: null })
+      }
+      console.log(`\n[ ${store.courseCreationTasks.length} tasks were generated ]`)
     }
   }
 
@@ -79,8 +81,10 @@ async function main () {
     if (!isShowTasksOnly) {
       await invokeCourseUpdateTasks(store)
     } else {
-      console.dir(store.courseUpdatetasks, { maxArrayLength: null })
-      console.log(`\n${store.courseUpdatetasks.length} Tasks`)
+      if (store.courseUpdatetasks.length) {
+        console.dir(store.courseUpdatetasks, { maxArrayLength: null })
+      }
+      console.log(`\n[ ${store.courseUpdatetasks.length} tasks were generated ]`)
     }
   }
 
@@ -94,8 +98,10 @@ async function main () {
     if (!isShowTasksOnly) {
       await invokeTeacherCourseEnrolmentTasks(store)
     } else {
-      console.dir(store.teacherCourseEnrolmentTasks, { maxArrayLength: null })
-      console.log(`\n${store.teacherCourseEnrolmentTasks.length} Tasks`)
+      if (store.teacherCourseEnrolmentTasks.length) {
+        console.dir(store.teacherCourseEnrolmentTasks, { maxArrayLength: null })
+      }
+      console.log(`\n[ ${store.teacherCourseEnrolmentTasks.length} tasks were generated ]`)
     }
   }
 
@@ -109,8 +115,10 @@ async function main () {
     if (!isShowTasksOnly) {
       await invokeTeacherCourseRemovalTasks(store)
     } else {
-      console.dir(store.teacherCourseRemovalTasks, { maxArrayLength: null })
-      console.log(`\n${store.teacherCourseRemovalTasks.length} Tasks`)
+      if (store.teacherCourseRemovalTasks.length) {
+        console.dir(store.teacherCourseRemovalTasks, { maxArrayLength: null })
+      }
+      console.log(`\n[ ${store.teacherCourseRemovalTasks.length} tasks were generated ]`)
     }
   }
 
@@ -124,8 +132,10 @@ async function main () {
     if (!isShowTasksOnly) {
       await invokeStudentCourseEnrolmentTasks(store)
     } else {
-      console.dir(store.studentCourseEnrolmentTasks, { maxArrayLength: null })
-      console.log(`\n${store.studentCourseEnrolmentTasks.length} Tasks`)
+      if (store.studentCourseEnrolmentTasks.length) {
+        console.dir(store.studentCourseEnrolmentTasks, { maxArrayLength: null })
+      }
+      console.log(`\n[ ${store.studentCourseEnrolmentTasks.length} tasks were generated ]`)
     }
   }
 
@@ -139,8 +149,10 @@ async function main () {
     if (!isShowTasksOnly) {
       await invokeStudentCourseRemovalTasks(store)
     } else {
-      console.dir(store.studentCourseRemovalTasks, { maxArrayLength: null })
-      console.log(`\n${store.studentCourseRemovalTasks.length} Tasks`)
+      if (store.studentCourseRemovalTasks.length) {
+        console.dir(store.studentCourseRemovalTasks, { maxArrayLength: null })
+      }
+      console.log(`\n[ ${store.studentCourseRemovalTasks.length} tasks were generated ]`)
     }
   }
 
@@ -150,12 +162,14 @@ async function main () {
     if (!isShowTasksOnly) {
       await invokeCourseArchiveTasks(store)
     } else {
-      console.dir(store.courseArchiveTasks, { maxArrayLength: null })
-      console.log(`\n${store.courseArchiveTasks.length} Tasks`)
+      if (store.courseArchiveTasks.length) {
+        console.dir(store.courseArchiveTasks, { maxArrayLength: null })
+      }
+      console.log(`\n[ ${store.courseArchiveTasks.length} tasks were generated ]`)
     }
   }
 
-  console.log(chalk.magentaBright('\n[ Finished! ]\n'))
+  console.log(chalk.magentaBright('\n[ Done ]\n'))
 
   async function invokeCourseCreationTasks (store) {
     if (store.courseCreationTasks.length) {
