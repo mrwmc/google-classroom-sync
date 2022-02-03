@@ -41,7 +41,6 @@ async function main () {
     await generateSyncTasks.getCompositeTeacherCourseEnrolmentTasks(store)
     await generateSyncTasks.getTeacherCourseEnrolmentTasks(store)
     await invokeTeacherCourseEnrolmentTasks(store)
-    await invokeTeacherCourseRemovalTasks(store)
 
     // add/remove students
     await generateSyncTasks.getCompositeStudentCourseEnrolmentTasks(store)
