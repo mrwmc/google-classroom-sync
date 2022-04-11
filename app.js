@@ -1,5 +1,6 @@
 import googleAuth from './modules/google-auth.js'
 import classroomActions from './modules/google-classroom-actions.js'
+import calendarActions from './modules/google-calendar-actions.js'
 import generateSubjectsFromCSV from './modules/build-subjects-from-csv.js'
 import getCourses from './modules/get-courses.js'
 import generateSyncTasks from './modules/generate-sync-tasks.js'
@@ -10,6 +11,11 @@ import store from './modules/store.js'
 async function main () {
   const args = processArguments(process.argv)
   const auth = googleAuth()
+
+  if (args.includes('--SYNC-CALENDARS'.toLowerCase())) {
+    await calendarActions.firstFunction(auth)
+    process.exit(1)
+  }
 
   let isShowTasksOnly = false
   if (args.includes('--SHOW-TASKS'.toLowerCase())) {

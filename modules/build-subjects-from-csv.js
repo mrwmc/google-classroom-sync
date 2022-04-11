@@ -10,6 +10,7 @@ export default function buildSubjects (store) {
   const dataset = {}
 
   getCompositeClasses()
+
   const subjects = getSubjectsAndClasses()
 
   addTeachersToSubjects()
@@ -128,6 +129,8 @@ export default function buildSubjects (store) {
   }
 
   function getCompositeClasses () {
+    const classExceptions = appSettings.compositeClassExceptions
+
     const compositeClasses = []
     const compositeClassList = []
     const compositeClassCodes = []
@@ -136,14 +139,14 @@ export default function buildSubjects (store) {
     const map = new Map()
 
     for (const item of TimetableCsv) {
-      if (!map.has(item.ClassCode)) {
+      if (!classExceptions.includes(item.ClassCode) && !map.has(item.ClassCode)) {
         map.set(item.ClassCode, true)
-
         uniqueLessonObjects.push({
           ClassCode: item.ClassCode,
           Period: item.PeriodNo,
           Teacher: item.TeacherCode,
-          Day: item.DayNo
+          Day: item.DayNo,
+          Room: item.RoomCode
         })
       }
     }
@@ -153,18 +156,21 @@ export default function buildSubjects (store) {
       const dayNo = lesson.Day
       const period = lesson.Period
       const teacher = lesson.Teacher
+      const room = lesson.Room
 
       const matchedClasses = []
 
       TimetableCsv.forEach((item) => {
-        if (item.ClassCode !== classCode &&
-          item.DayNo === dayNo &&
-          item.PeriodNo === period &&
-          item.TeacherCode === teacher
-        ) {
-          matchedClasses.push(classCode, item.ClassCode)
-          compositeClassList.push(classCode)
-          compositeClassList.push(item.ClassCode)
+        if (!classExceptions.includes(item.ClassCode)) {
+          if (item.ClassCode !== classCode &&
+            item.DayNo === dayNo &&
+            item.PeriodNo === period &&
+            (item.TeacherCode === teacher || item.Room === room)
+          ) {
+            matchedClasses.push(classCode, item.ClassCode)
+            compositeClassList.push(classCode)
+            compositeClassList.push(item.ClassCode)
+          }
         }
       })
 
@@ -173,23 +179,28 @@ export default function buildSubjects (store) {
       }
     })
 
-    const uniqueCompositeClassCodes = [...new Set(compositeClassList.sort())]
-    const distinctCompositeClassCodes = Array.from(new Set(compositeClassCodes.map(JSON.stringify)), JSON.parse)
+    const uniqueUngroupedCompositeClassCodes = [...new Set(compositeClassList.sort())]
 
-    const cCodes = []
+    const removeDuplicateItems = []
+    compositeClassCodes.forEach(e => {
+      const uniqueElements = [...new Set(e)]
+      removeDuplicateItems.push(uniqueElements.sort())
+    })
 
-    distinctCompositeClassCodes.forEach(c => {
+    const uniqueGroupedCompositeClassCodes = Array.from(new Set(removeDuplicateItems.map(JSON.stringify)), JSON.parse)
+
+    uniqueGroupedCompositeClassCodes.forEach(classCodeGroup => {
       const Students = []
       const Teachers = []
 
       StudentLessonsCsv.forEach((lesson) => {
-        if (lesson.ClassCode === c[0] || lesson.ClassCode === c[1]) {
+        if (classCodeGroup.includes(lesson.ClassCode)) {
           Students.push(`${lesson.StudentCode.toLowerCase()}${appSettings.domain}`)
         }
       })
 
       TimetableCsv.forEach((lesson) => {
-        if (lesson.ClassCode === c[0] || lesson.ClassCode === c[1]) {
+        if (classCodeGroup.includes(lesson.ClassCode)) {
           Teachers.push(`${lesson.TeacherCode.toLowerCase()}${appSettings.domain}`)
         }
       })
@@ -197,17 +208,26 @@ export default function buildSubjects (store) {
       const uniqueStudents = [...new Set(Students)]
       const uniqueTeachers = [...new Set(Teachers)]
 
-      cCodes.push(`${c[0]}-${c[1]}`)
+      let SubjectName = ''
+      let ClassCode = ''
+
+      classCodeGroup.forEach(classCode => {
+        SubjectName += classCode + '-'
+        ClassCode += classCode + '-'
+      })
+
+      SubjectName = SubjectName.slice(0, -1)
+      ClassCode = ClassCode.slice(0, -1)
 
       compositeClasses.push({
-        SubjectName: `${c[0]}-${c[1]}`,
-        ClassCode: `${c[0]}-${c[1]}`,
+        SubjectName,
+        ClassCode,
         Teachers: uniqueTeachers,
         Students: uniqueStudents
       })
     })
 
-    dataset.CompositeClassCodeList = uniqueCompositeClassCodes
+    dataset.CompositeClassCodeList = uniqueUngroupedCompositeClassCodes
     dataset.CompositeClasses = compositeClasses
   }
 }
