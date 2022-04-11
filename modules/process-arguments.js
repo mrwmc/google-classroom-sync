@@ -17,7 +17,8 @@ export default function processArguments (commandArgs) {
     '--remove-students',
     '--archive-courses',
     '--all-tasks',
-    '--show-tasks'
+    '--show-tasks',
+    '--sync-calendars'
   ]
 
   if (!args.length) {
@@ -54,7 +55,7 @@ export default function processArguments (commandArgs) {
     console.log(chalk.white('   --Add-Students     : Looks up timetable CSV files and and adds students to exisitng Google Classroom courses.\n'))
     console.log(chalk.white('   --Remove-Students  : Looks up timetable CSV files and removes students from exisiting Google Classroom courses who are not in timetable.\n'))
     console.log(chalk.white('   --Archive-Courses  : Archives class (not subject) courses that are not found in the timetable CSV files.\n'))
-    console.log(chalk.white('   --All-Tasks        : Runs a courses, update, teachers (does not remove teacher), students and archive sync. Can not be used with --Show-Tasks\n'))
+    console.log(chalk.white('   --All-Tasks        : Runs add courses, update courses, add teachers (does not remove teacher), add students and archive tasks. Can not be used with --Show-Tasks\n'))
     console.log(chalk.white('   --Show-Tasks       : Displays the generated task objects on screen instead of executing them.\n'))
     console.log(chalk.redBright('\n' + exceptionMsg + '\n'))
   }
